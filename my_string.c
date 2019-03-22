@@ -233,3 +233,15 @@ size_t find_c(string s, const char* str){
 string insert_c(string s, const char* str, size_t s_pos){
   return insert(s, init_string(str), s_pos);
 }
+
+int equal(string s, string d){
+  size_t slen = size(s);
+  size_t dlen = size(d);
+  if(slen != dlen)return 0;
+  for(size_t i = 0;i < slen;i ++){
+    if(s.data[i] != d.data[i]){
+      return 0;
+    }
+  }
+  return 1;
+}

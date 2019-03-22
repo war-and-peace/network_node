@@ -9,18 +9,7 @@ typedef struct _vector_string{
     string *_begin, *_end;
 } svector_t;
 
-svector_t init_vector_s(){
-    svector_t t;
-    t._size = (size_t*)malloc(sizeof(size_t));
-    t._capacity = (size_t*)malloc(sizeof(size_t));
-    t.data = (string*)malloc(sizeof(string));
-    *(t._size) = 0u;
-    *(t._capacity) = 1;
-    t._begin = &t.data[0];
-    t._end = &t.data[0];
-    return t;
-}
-
-svector_t svector_add(string s){
-    
-}
+string sv_at(svector_t t, size_t pos);
+svector_t svector_add(svector_t v, string s);
+svector_t init_svector();
+int can_add(size_t* size, size_t* c);
