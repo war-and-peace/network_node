@@ -1,4 +1,5 @@
 #include "vector.h"
+#include <stdio.h>
 
 int can_add(size_t* size, size_t* c){
     if(*(size) + 1 < (*c))return 1;else return 0;
@@ -20,10 +21,10 @@ svector_t svector_add(svector_t v, string s){
     if(can_add(v._size, v._capacity)){
         *(v._end) = s;
         v._end ++;
-        *(v._size) ++;
+        (*(v._size)) ++;
         return v;
     }else{
-        size_t n = *(v._size);
+        size_t n = *(v._capacity);
         n *= 2;
         string* temp = (string*)malloc(sizeof(string) * n);
         for(size_t i = 0;i < *(v._size);i ++){
@@ -34,8 +35,8 @@ svector_t svector_add(svector_t v, string s){
         free(temp2);
         v._begin = &v.data[0];
         v.data[*(v._size)] = s;
-        *(v._size) ++;
-        v._end = &v.data[*(v._size)];
+        (*(v._size)) ++;
+        v._end = &(v.data[*(v._size)]);
         *(v._capacity) = n;
         return v;
     }

@@ -227,11 +227,11 @@ size_t find(string s, string d){
 }
 
 size_t find_c(string s, const char* str){
-  return find(s, init_string(str));
+  return find(s, init_string_c(str));
 }
 
 string insert_c(string s, const char* str, size_t s_pos){
-  return insert(s, init_string(str), s_pos);
+  return insert(s, init_string_c(str), s_pos);
 }
 
 int equal(string s, string d){

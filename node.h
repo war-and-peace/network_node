@@ -1,4 +1,3 @@
-#include "my_string.h"
 #include "vector.h"
 
 typedef struct _node{
