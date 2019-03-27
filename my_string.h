@@ -35,3 +35,5 @@ size_t find(string s, string d);
 size_t find_c(string, const char* str);
 string insert_c(string s, const char* str, size_t s_pos);
 int equal(string s, string d);
+char* to_char(string s);
+int to_int(string s);

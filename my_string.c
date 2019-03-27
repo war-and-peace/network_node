@@ -245,3 +245,24 @@ int equal(string s, string d){
   }
   return 1;
 }
+
+char* to_char(string s){
+  char* buffer = (char*)malloc(sizeof(char) * 1024);
+  size_t n = size(s);
+  for(size_t i = 0;i < n;i ++){
+    buffer[i] = s.data[i];
+  }
+  buffer[n] = '\0';
+  return buffer;
+}
+
+int to_int(string s){
+  size_t n = size(s);
+  int ans = 0;
+  for(size_t i = 0;i < n;i ++){
+    char c = s.data[i];
+    ans *= 10;
+    ans += (c - '0');
+  }
+  return ans;
+}

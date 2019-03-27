@@ -50,3 +50,12 @@ string sv_at(svector_t t, size_t pos){
     }
 }
 
+int svector_contains(svector_t v, string s){
+    // perror("inside contains");
+    // printf("vector size: %d\n", *(v._size));
+    for(size_t i = 0;i < *(v._size);i ++){
+        if(equal(v.data[i], s))return 1;
+    }
+    // perror("inside contains done");
+    return 0;
+}

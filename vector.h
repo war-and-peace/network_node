@@ -13,3 +13,4 @@ string sv_at(svector_t t, size_t pos);
 svector_t svector_add(svector_t v, string s);
 svector_t init_svector();
 int can_add(size_t* size, size_t* c);
+int svector_contains(svector_t v, string s);

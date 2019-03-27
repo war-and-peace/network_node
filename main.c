@@ -1,36 +1,24 @@
-#include "dbase.h"
-#include <stdio.h>
+// #include "dbase.h"
+#include "connection.h"
+#include <pthread.h>
 
 dbase_t* db;
-#define IP "127.0.0.1"
-#define PORT "2003"
-#define NAME "RA"
+svector_t* mfiles;
 
-int initialize_database(string knode_ip, string knode_port, string knode_name){
-    db = (dbase_t*)malloc(sizeof(dbase_t));
-    if(db == NULL){
-        perror("can't allocate memory for database");
-        return errno;
-    }
-    db->n = 1;
-    db->known_nodes = (node_t*)malloc(sizeof(node_t));
-    if(db->known_nodes == NULL){
-        perror("Can't allocate memory for known_nodes");
-        return errno;
-    }
-    db->known_nodes->name = (string*)malloc(sizeof(string));
-    *(db->known_nodes->name) = init_string_s(knode_name);
-    db->known_nodes->ip = (string*)malloc(sizeof(string));
-    *(db->known_nodes->ip) = init_string_s(knode_ip);
-    db->known_nodes->port = (string*)malloc(sizeof(string));
-    *(db->known_nodes->port) = init_string_s(knode_port);
-    db->known_nodes->files = (svector_t*)malloc(sizeof(svector_t));
-    return 0;
+
+void init_files(){
+    mfiles = (svector_t*)malloc(sizeof(svector_t));
+    (*mfiles) = init_svector();
+    (*mfiles) = svector_add((*mfiles), init_string_c("ra.txt"));
 }
 
 int main(){
-    int ret = initialize_database(init_string_c(IP), init_string_c(PORT), init_string_c(NAME));
-    if(ret != 0)return ret;
-    
+    init_files();
+    // if(initialize_database(init_string_c(IP), init_string_c(PORT), init_string_c(NAME)))return 1;
+    if(initialize_database_clean())return 1;
+    pthread_t thread;
+    pthread_create(&thread, NULL, setup_client_tcp_communication, NULL);
+    setup_tcp_server_communication();
+    pthread_join(thread, NULL);
     return 0;
 }

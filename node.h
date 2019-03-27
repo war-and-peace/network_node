@@ -6,3 +6,5 @@ typedef struct _node{
     string* port;
     svector_t* files;
 } node_t;
+
+node_t init_node();
