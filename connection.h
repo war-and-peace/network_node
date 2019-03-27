@@ -10,8 +10,9 @@
 #include <stdio.h>
 
 #define SERVER_PORT 2000
+#define SERVER_PORT_C "2000"
 #define h_addr h_addr_list[0]
-#define BUFFER_SIZE 2014
+#define BUFFER_SIZE 1024
 #define IP "127.0.0.1"
 #define PORT "2003"
 #define NAME "RA"

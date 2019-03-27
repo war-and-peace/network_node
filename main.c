@@ -14,8 +14,8 @@ void init_files(){
 
 int main(){
     init_files();
-    // if(initialize_database(init_string_c(IP), init_string_c(PORT), init_string_c(NAME)))return 1;
-    if(initialize_database_clean())return 1;
+    if(initialize_database(init_string_c("192.168.1.6"), init_string_c("2000"), init_string_c("VM")))return 1;
+    //if(initialize_database_clean())return 1;
     pthread_t thread;
     pthread_create(&thread, NULL, setup_client_tcp_communication, NULL);
     setup_tcp_server_communication();
