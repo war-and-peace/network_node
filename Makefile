@@ -1,10 +1,10 @@
 CC=gcc
-CFLAGS=-I -pthread
-DEPS = node.h my_string.h dbase.h main.c
-OBJ = node.o my_string.o dbase.o main.o
+VPATH = obj:src:include
+DEPS = my_string.h dbase.h connection.h vector.h node.h
+OBJ = my_string.o dbase.o connection.o vector.o node.o main.o
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -pthread -c -o $@ $< $(CFLAGS)
 
 node: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -pthread -o bin/$@ $^ $(CFLAGS)

@@ -11,7 +11,7 @@ typedef struct _str{
 	char data[1024];
 } sstr;
 
-void setup_tcp_server_communication(){
+void* setup_tcp_server_communication(void* args){
     int master_sock_tcp_fd = 0, sent_recv_bytes = 0, addr_len = 0, opt = 1;
     int comm_socket_fd = 0;     
     fd_set readfds;               
@@ -22,9 +22,8 @@ void setup_tcp_server_communication(){
     }
     
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(2000);
-    // server_addr.sin_addr.s_addr = INADDR_ANY; 
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = SERVER_PORT;
+    server_addr.sin_addr.s_addr = INADDR_ANY; 
     addr_len = sizeof(struct sockaddr);
 
     if (bind(master_sock_tcp_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1){
@@ -93,30 +92,35 @@ void setup_tcp_server_communication(){
                 }else{
                     sent_recv_bytes = recvfrom(comm_socket_fd, (char *)data_buffer, sizeof(data_buffer), 0, (struct sockaddr *)&client_addr, &addr_len);
                     string file_name = init_string_c(data_buffer);
-                    
+                    printf("CLIENT is requesting: \t");sprintln(file_name);
                     if(!svector_contains(*mfiles, file_name)){
                         int result = 0;
                         sent_recv_bytes = sendto(comm_socket_fd, (char *)&result, sizeof(int), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
                     }else{
+                        printf("Opening the file to send\n");
                         FILE* f = fopen(data_buffer, "r");
                         if(f == NULL){
                             perror("Opening the file");
-                            int result = 0;
-                            sent_recv_bytes = sendto(comm_socket_fd, (char *)&result, sizeof(int), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
+                            flag_t result;
+                            result.v = 0;
+                            sent_recv_bytes = sendto(comm_socket_fd, (char *)&result, sizeof(flag_t), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
                         }else{
                             int n = count_words(f);
-                            sent_recv_bytes = sendto(comm_socket_fd, (char *)&n, sizeof(int), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
+                            flag_t nn;
+                            nn.v = n;
+                            sent_recv_bytes = sendto(comm_socket_fd, (char *)&n, sizeof(flag_t), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
                             fclose(f);
                             FILE* g = fopen(data_buffer, "r");
                             char str[1024];
                             while(fscanf(g, "%s", str)){
-                                sent_recv_bytes = sendto(comm_socket_fd, (char *)&str, sizeof(char[1024]), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
+                                sent_recv_bytes = sendto(comm_socket_fd, (char *)&str, strlen(str) + 1, 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
                             }
                             fclose(g);
                         }
                     }
+			break;
                 }
-                break;
+                
             }
        }
    } 
@@ -144,9 +148,14 @@ void* setup_client_tcp_communication(void* args) {
             type = 0;
         }
 
+	printf("CLIENT READY TO CONNECT WITH CONNECTION TYPE: %d\n", type);
         if (type)
         {
-            for (size_t i = 0; i < db->n; i++)
+			size_t size = db->n;
+			if(size == 0){
+				printf("Database empty\n");
+			}
+            for (size_t i = 0; i < size; i++)
             {
                 printf("db size: %d\n", db->n);
                 node_t node = db->known_nodes[i];
@@ -194,7 +203,7 @@ void* setup_client_tcp_communication(void* args) {
                     string message = get_message(next_n);
 			        printf("message: \t");sprintln(message);
                     char *mbuf = to_char(message);
-                    sent_recv_bytes = sendto(sockfd, &mbuf, strlen(mbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+                    sent_recv_bytes = sendto(sockfd, (char*)mbuf, strlen(mbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
                 }
             }
         } else {
@@ -217,18 +226,19 @@ void* setup_client_tcp_communication(void* args) {
 
             printf("CLIENT: Connection established!\n");
 
-            int req_p = 0;
-            sent_recv_bytes = sendto(sockfd, &req_p, sizeof(int), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+            flag_t req_p;
+            req_p.v = 0;
+            sent_recv_bytes = sendto(sockfd, (char*)&req_p, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 
             char *fbuf = to_char(file_n);
-            sent_recv_bytes = sendto(sockfd, &fbuf, sizeof(char[1024]), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+            sent_recv_bytes = sendto(sockfd, (char*)&fbuf, strlen(fbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 
-            int nwords;
-            sent_recv_bytes =  recvfrom(sockfd, (char *)&nwords, sizeof(int), 0, (struct sockaddr *)&dest, &addr_len);
+            flag_t nwords;
+            sent_recv_bytes =  recvfrom(sockfd, (char *)&nwords, sizeof(flag_t), 0, (struct sockaddr *)&dest, &addr_len);
 
             FILE* f = fopen(to_char(file_n), "w");
             char buffer[1024];
-            for(int i = 0;i < nwords;i ++){
+            for(int i = 0;i < nwords.v;i ++){
                 sent_recv_bytes =  recvfrom(sockfd, (char *)&buffer, 1024, 0, (struct sockaddr *)&dest, &addr_len);
                 fprintf(f, "%s", buffer);
             }

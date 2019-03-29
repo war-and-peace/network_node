@@ -18,7 +18,7 @@ int main(){
     //if(initialize_database_clean())return 1;
     pthread_t thread;
     pthread_create(&thread, NULL, setup_client_tcp_communication, NULL);
-    setup_tcp_server_communication();
+    setup_tcp_server_communication(NULL);
     pthread_join(thread, NULL);
     return 0;
 }
