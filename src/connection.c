@@ -90,7 +90,8 @@ void *server_thread(void *args) {
                     fclose(f);
                     FILE *g = fopen(buffer, "r");
                     char str[1024];
-                    while (fscanf(g, "%s", str)) {
+                    while (!feof(g)) {
+                        fscanf(g, "%s", str);
                         nread = send(sock, str, strlen(str) + 1, 0);
                     }
                     fclose(g);
