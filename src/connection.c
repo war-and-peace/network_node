@@ -413,8 +413,9 @@ svector_t parse_file_names(string n_files){
 int count_words(FILE* f){
     char s[1024];
     int cnt = 0;
-    while(fscanf(f, "%s", s)){
-        cnt ++;
+    while(!feof(f)){
+        fscanf(f, "%s", s);
+        cnt++;
     }
     return cnt;
 }
