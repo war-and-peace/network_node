@@ -27,7 +27,6 @@ typedef struct _client_info{
     char ip[30];
 } client_info_t;
 
-char data_buffer[BUFFER_SIZE];
 flag_t* flag;
 
 void* server_thread(void* args);

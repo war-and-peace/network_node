@@ -34,30 +34,31 @@ void *server_thread(void *args) {
         memset(buffer, 0, sizeof(buffer));
         nread = recv(sock, (char*)&num, sizeof(flag_t), 0);
         
-        fprintf(stderr, "value: %d\n", num.v);
+        fprintf(stderr, "SERVER: value: %d\n", num.v);
 
         if (num.v) {
             memset(buffer, 0, sizeof(buffer));
             nread = recv(sock, buffer, sizeof(buffer), 0);
-            string node_info = init_string_c(data_buffer);
-            sprintln(node_info);
+            string node_info = init_string_c(buffer);
+            fprintf(stderr, "SERVER: node info:\t"); sprintln(node_info);
             flag_t files_n;
             nread = recv(sock, &files_n, sizeof(flag_t), 0);
-            printf("known node: %d\n", files_n.v);
+            printf("SERVER: known node: %d\n", files_n.v);
             svector_t known_nodes = init_svector();
             for (int i = 0; i < files_n.v; i++) {
                 nread = recv(sock, buffer, sizeof(buffer), 0);
-                string node_i = init_string_c(data_buffer);
-                printf("next node: ");
+                string node_i = init_string_c(buffer);
+                printf("SERVER: next node: ");
                 sprintln(node_i);
                 known_nodes = svector_add(known_nodes, node_i);
             }
+
             printf("SERVER: Received all the data\n");
             resolve_sync(node_info, files_n.v, known_nodes);
             break;
         } else {
             nread = recv(sock, buffer, sizeof(buffer), 0);
-            string file_name = init_string_c(data_buffer);
+            string file_name = init_string_c(buffer);
             fprintf(stderr, "CLIENT is requesting: \t");
             sprintln(file_name);
             if (!svector_contains(*mfiles, file_name)) {
@@ -65,7 +66,7 @@ void *server_thread(void *args) {
                 nread = send(sock, &result, sizeof(int), 0);
             } else {
                 // fprintf(stderr, "Opening the file to send\n");
-                FILE *f = fopen(data_buffer, "r");
+                FILE *f = fopen(buffer, "r");
                 if (f == NULL) {
                     perror("Opening the file");
                     flag_t result;
@@ -77,7 +78,7 @@ void *server_thread(void *args) {
                     nn.v = n;
                     nread = send(sock, &n, sizeof(flag_t), 0);
                     fclose(f);
-                    FILE *g = fopen(data_buffer, "r");
+                    FILE *g = fopen(buffer, "r");
                     char str[1024];
                     while (fscanf(g, "%s", str)) {
                         nread = send(sock, str, strlen(str) + 1, 0);
@@ -98,10 +99,12 @@ void *server_thread(void *args) {
 void* client_ping_thread(void* args) {
     fprintf(stderr, "Client ping thread\n");
     while (1) {
+        sleep(1);
         size_t size = db->n;
         for (size_t i = 0; i < size; i++) {
             node_t node = db->known_nodes[i];
-            sprintln(*(node.ip));
+            fprintf(stderr, "CLIENT: connecting to: ");
+            sprint(*(node.ip));
             sprintln(*(node.port));
 
             struct sockaddr_in dest;
@@ -115,30 +118,35 @@ void* client_ping_thread(void* args) {
             int sock = socket(AF_INET, SOCK_STREAM, 0);
 
             if (sock == -1) {
-                perror("socket creation");
+                perror("CLIENT socket creation");
                 continue;
             }
-
+            
             int connect_n = connect(sock, (struct sockaddr *)&dest, sizeof(dest));
             if (connect_n != 0) {
-                perror("connecting ");
+                fprintf(stderr, "ERROR in connecting: %d\n", errno);
+                close(sock);
                 continue;
             }
-            printf("CLIENT: Connection established!\n");
-
+            if (connect_n) continue;
+            if (connect_n != 0) {
+                fprintf(stderr, "CLIENT: Connection established!\n");
+                fprintf(stderr, "CLIENT: WHy it is printing this?\n");
+            }
             int sync_p = 1;
 
             flag_t num;
             num.v = 1;
-            printf("done here\n");
+            printf("done here %d\n", connect_n);
             nbytes = send(sock, &num, sizeof(num), 0);
             // sent_recv_bytes = sendto(sockfd, (char *)&num, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             // printf("number of bytes sent: %d\n", sent_recv_bytes);
             string my_node = my_node_init();
             char *mnbuf = to_char(my_node);
             sprintln(my_node);
+            fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %d\n", strlen(mnbuf));
-            nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, 0);
+            nbytes = send(sock, &mnbuf, strlen(mnbuf) + 1, 0);
             // sent_recv_bytes = sendto(sockfd, (char *)mnbuf, strlen(mnbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             printf("sent bytes: %d\n", nbytes);
             size_t n_known = db->n;
@@ -156,6 +164,7 @@ void* client_ping_thread(void* args) {
                 // sent_recv_bytes = sendto(sockfd, (char *)mbuf, strlen(mbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             }
             close(sock);
+            
         }
     }
 }
@@ -334,7 +343,9 @@ void resolve_sync(string node_info, int n, svector_t nodes_i){
             }
         }
         port[current] = '\0';
-
+        if(strcmp(ip, MY_IP) == 0){
+            continue;
+        }
         node_t node = init_node();
         *(node.name) = init_string_c(name);
         *(node.ip) = init_string_c(ip);

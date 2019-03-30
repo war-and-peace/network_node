@@ -31,6 +31,11 @@ int main(){
 
     listensock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
+    if(listensock < 0){
+        perror("socket creation");
+        exit(1);
+    }
+
     val = 1;
     result = setsockopt(listensock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
     if (result < 0) {
@@ -43,7 +48,7 @@ int main(){
     sAddr.sin_addr.s_addr = INADDR_ANY;
     result = bind(listensock, (struct sockaddr*)&sAddr, sizeof(sAddr));
     if (result < 0) {
-        perror("SERVER");
+        perror("SERVER bind");
         return 0;
     }
 
@@ -66,6 +71,7 @@ int main(){
             b1[counter] = node_i.data[counter];
             counter++;
         }
+        b1[counter] = '\0';
         counter++;
         int counter2 = 0;
         while (counter < size(node_i)) {
@@ -73,6 +79,7 @@ int main(){
             counter2++;
             counter++;
         }
+        b2[counter2] = '\0';
         if (initialize_database(init_string_c(b1), init_string_c(b2), init_string_c("VM"))) return 1;
     }
 
