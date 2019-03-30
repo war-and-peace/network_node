@@ -172,7 +172,7 @@ void* client_ping_thread(void* args) {
             fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %lu\n", strlen(mnbuf));
             fprintf(stderr, "Size: %d\n", strlen(mnbuf) + 1);
-            nbytes = send(sock, mnbuf, strlen(mnbuf), 0);
+            nbytes = send(sock, mnbuf, sizeof(mnbuf), 0);
             nanosleep(100000000l);
             fprintf(stderr, "CLIENT: sent bytes: %d\n", nbytes);
             printf("sent bytes: %d\n", nbytes);
@@ -190,7 +190,7 @@ void* client_ping_thread(void* args) {
                 char mbuf[BUFFER_SIZE];
                 strcpy(mbuf, to_char(message));
                 // char *mbuf = to_char(message);
-                nbytes = send(sock, mbuf, strlen(mbuf), 0);
+                nbytes = send(sock, mbuf, sizeof(mbuf), 0);
                 nanosleep(100000000l);
             }
             close(sock);
