@@ -42,7 +42,8 @@ void *server_thread(void *args) {
             string node_info = init_string_c(buffer);
             fprintf(stderr, "SERVER: node info:\t"); sprintln(node_info);
             int f_num;
-            nread = recv(sock, (char*)&f_num, sizeof(f_num), 0);
+            fprintf(stderr, "sizeof(fnum): %d\n", sizeof(f_num));
+            nread = recv(sock, (char *)&f_num, sizeof(f_num), 0);
             fprintf(stderr, "received bytes: %d\n", nread);
             printf("SERVER: known node: %d\n", f_num);
             fprintf(stderr, "Number of next nodes %d\n", f_num);
@@ -156,18 +157,18 @@ void* client_ping_thread(void* args) {
 
             int n = 1;
             printf("done here %d\n", connect_n);
-            nbytes = send(sock, (char*)&n, sizeof(n), 0);
+            nbytes = send(sock, (char*)&n, sizeof(n), MSG_DONTWAIT);
             string my_node = my_node_init();
             char *mnbuf = to_char(my_node);
             sprintln(my_node);
             fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %lu\n", strlen(mnbuf));
-            nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, 0);
+            nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, MSG_DONTWAIT);
             printf("sent bytes: %d\n", nbytes);
             size_t n_known = db->n;
             n = db->n;
             printf("db n: %d\n", n);
-            nbytes = send(sock, (char*)&n, sizeof(n), 0);
+            nbytes = send(sock, (char*)&n, sizeof(n), MSG_DONTWAIT);
             fprintf(stderr, "Sent bytes: %d\n", nbytes);
             for (size_t k = 0; k < (db->n); k++) {
                 node_t next_n = db->known_nodes[k];
@@ -175,7 +176,7 @@ void* client_ping_thread(void* args) {
                 printf("message: \t");
                 sprintln(message);
                 char *mbuf = to_char(message);
-                nbytes = send(sock, mbuf, strlen(mbuf) + 1, 0);
+                nbytes = send(sock, mbuf, strlen(mbuf) + 1, MSG_DONTWAIT);
             }
             close(sock);
             
