@@ -186,7 +186,8 @@ void* client_file_thread(void* args) {
         }
 
         string file_n = init_string_c(file_name);
-        
+        fprintf(stderr, "Requesting the file with name: ");
+        sprintln(file_n);
         node_t node = get_file_node(file_n);
         if(node.ip == NULL){
             fprintf(stderr, "Don't know where to find this file. Check file name\n");
@@ -203,10 +204,21 @@ void* client_file_thread(void* args) {
         dest.sin_addr = *((struct in_addr *)host->h_addr);
 
         sock = socket(AF_INET, SOCK_STREAM, 0);
+        if(sock < 0){
+            fprintf(stderr, "CLIENT: file: ");
+            perror("socket creation");
+            continue;
+        }
 
-        connect(sock, (struct sockaddr *)&dest, sizeof(dest));
+        int result = connect(sock, (struct sockaddr *)&dest, sizeof(dest));
 
-        printf("CLIENT: Connection established!\n");
+        if(result != 0){
+            perror("CLIENT: file: connecting ");
+            close(sock);
+            continue;
+        }
+
+        printf("CLIENT: file: Connection established!\n");
 
         flag_t req_p;
         req_p.v = 0;
@@ -215,13 +227,19 @@ void* client_file_thread(void* args) {
 
         char *fbuf = to_char(file_n);
         nbytes = send(sock, fbuf, strlen(fbuf) + 1, 0);
+        fprintf(stderr, "CLIENT: file: sent file name: %s\n", fbuf);
         // sent_recv_bytes = sendto(sockfd, (char *)&fbuf, strlen(fbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 
         flag_t nwords;
         nbytes = recv(sock, &nwords, sizeof(nwords), 0);
+        fprintf("CLIENT: file: received byte count: %d\n", nwords.v);
         // sent_recv_bytes = recvfrom(sockfd, (char *)&nwords, sizeof(flag_t), 0, (struct sockaddr *)&dest, &addr_len);
 
         FILE *f = fopen(to_char(file_n), "w");
+        if(f == NULL){
+            perror("CLIENT: file: file open");
+            continue;
+        }
         char buffer[1024];
         for (int i = 0; i < nwords.v; i++) {
             nbytes = recv(sock, buffer, sizeof(buffer), 0);
