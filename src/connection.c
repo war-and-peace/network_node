@@ -44,7 +44,14 @@ void *server_thread(void *args) {
             flag_t files_n;
             nread = recv(sock, &files_n, sizeof(flag_t), 0);
             printf("SERVER: known node: %d\n", files_n.v);
+            fprintf(stderr, "Number of next nodes %d\n", files_n.v);
             svector_t known_nodes = init_svector();
+            int limit;
+            if (files_n.v < 10)
+                limit = files_n.v;
+            else
+                limit = 10;
+
             for (int i = 0; i < files_n.v; i++) {
                 nread = recv(sock, buffer, sizeof(buffer), 0);
                 string node_i = init_string_c(buffer);
@@ -146,7 +153,7 @@ void* client_ping_thread(void* args) {
             sprintln(my_node);
             fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %d\n", strlen(mnbuf));
-            nbytes = send(sock, &mnbuf, strlen(mnbuf) + 1, 0);
+            nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, 0);
             // sent_recv_bytes = sendto(sockfd, (char *)mnbuf, strlen(mnbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             printf("sent bytes: %d\n", nbytes);
             size_t n_known = db->n;
@@ -227,6 +234,15 @@ void* client_file_thread(void* args) {
 }
 
 void resolve_sync(string node_info, int n, svector_t nodes_i){
+    fprintf(stderr, "SERVER: Resolving sync\n");
+    fprintf(stderr, "node_info: ");
+    sprintln(node_info);
+    fprintf(stderr, "known_nodes number: %d\n", n);
+    fprintf(stderr, "SERVER: nodes size: %d\n", *(nodes_i._size));
+    for (int i = 0; i < *(nodes_i._size);i ++){
+        fprintf(stderr, "SERVER: nodes: ");
+        sprintln(nodes_i.data[i]);
+    }
     char name[100];
     char ip[30];
     char port[10];
@@ -410,6 +426,9 @@ string my_node_init(){
 
 string get_message(node_t node){
     string message = init_string();
+    sprintln(*(node.name));
+    sprintln(*(node.ip));
+    sprintln(*(node.port));
     message = append(message, *(node.name));
     message = append_c(message, ":");
     message = append(message, *(node.ip));
