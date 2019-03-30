@@ -97,8 +97,8 @@ void *server_thread(void *args) {
                         sprintln(word);
                         char *sending = to_char(word);
                         fprintf(stderr, "FILE: SERVER: current word: %s\n", str);
-                        fprintf(stderr, "FILE: SERVER: word lenght: %d\n", strlen(sending));
-                        nread = send(sock, sending, strlen(sending) + 1, 0);
+                        fprintf(stderr, "FILE: SERVER: word length: %d\n", strlen(sending));
+                        nread = send(sock, sending, strlen(sending), 0);
                         fprintf(stderr, "FILE: SERVER: sent bytes: %d\n", nread);
                         // memset(str, 0, sizeof(str));
                     }
@@ -257,6 +257,7 @@ void* client_file_thread(void* args) {
         for (int i = 0; i < nwords.v; i++) {
             char buffer[1024];
             nbytes = recv(sock, buffer, sizeof(buffer), 0);
+            buffer[nbytes] = '\0';
             fprintf(stderr, "CLIENT: FILE: Received number of bytes: %d\n", nbytes);
             fprintf(stderr, "CLIENT: FILE: Received word: %s", buffer);
             fprintf(f, "%s", buffer);
