@@ -8,7 +8,7 @@
   From the root directory of the project run these commands:
   <ul>
     <li>make new</li>
-    <li>make< - this might report some issues. Do not bother with them/li>
+    <li>make - this might report some issues. Do not bother with them</li>
     <li>make</li>
   </ul>
 </p>
