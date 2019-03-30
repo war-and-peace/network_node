@@ -106,7 +106,7 @@ void *server_thread(void *args) {
 void* client_ping_thread(void* args) {
     fprintf(stderr, "Client ping thread\n");
     while (1) {
-        sleep(1);
+        sleep(3);
         size_t size = db->n;
         for (size_t i = 0; i < size; i++) {
             node_t node = db->known_nodes[i];
