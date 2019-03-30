@@ -47,7 +47,7 @@ void *server_thread(void *args) {
             string node_info = init_string_c(buffer);
             fprintf(stderr, "SERVER: node info:\t"); sprintln(node_info);
             int f_num;
-            fprintf(stderr, "sizeof(fnum): %d\n", sizeof(f_num));
+            fprintf(stderr, "sizeof(fnum): %lu\n", sizeof(f_num));
             nread = recv(sock, (char *)&f_num, sizeof(f_num), 0);
             fprintf(stderr, "received bytes: %d\n", nread);
             printf("SERVER: known node: %d\n", f_num);
@@ -171,7 +171,7 @@ void* client_ping_thread(void* args) {
             sprintln(my_node);
             fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %lu\n", strlen(mnbuf));
-            fprintf(stderr, "Size: %d\n", strlen(mnbuf) + 1);
+            fprintf(stderr, "Size: %lu\n", strlen(mnbuf) + 1);
             nbytes = send(sock, mnbuf, sizeof(mnbuf), 0);
             nanosleep(100000000l);
             fprintf(stderr, "CLIENT: sent bytes: %d\n", nbytes);
@@ -245,8 +245,9 @@ void* client_file_thread(void* args) {
         int req_p = 0;
         nbytes = send(sock, &req_p, sizeof(req_p), 0);
 
-        char *fbuf = to_char(file_n);
-        nbytes = send(sock, fbuf, strlen(fbuf) + 1, 0);
+        char fbuf[BUFFER_SIZE];
+        strcpy(fbuf, to_char(file_n));
+        nbytes = send(sock, fbuf, sizeof(fbuf), 0);
         fprintf(stderr, "CLIENT: file: sent file name: %s\n", fbuf);
 
         int nwords;
@@ -342,8 +343,8 @@ void resolve_sync(string node_info, int n, svector_t nodes_i){
     // sprintln(n_ip);
     // sprintln(n_port);
     string n_files = init_string_c(files);
-    n_files = erase(n_files, 0, 1);
-    n_files = erase(n_files, size(n_files) - 1, 1);
+    // n_files = erase(n_files, 0, 1);
+    // n_files = erase(n_files, size(n_files) - 1, 1);
     // sprintln(n_files);
     svector_t files_list = parse_file_names(n_files);
     node_t node = init_node();
@@ -447,7 +448,7 @@ string my_node_init(){
     my_node = append_c(my_node, ":");
     my_node = append_c(my_node, SERVER_PORT_C);
     my_node = append_c(my_node, ":");
-    my_node = append_c(my_node, "[");
+    // my_node = append_c(my_node, "[");
     size_t n_files = *(mfiles->_size);
     for (size_t k = 0; k < n_files; k++)
     {
@@ -461,7 +462,7 @@ string my_node_init(){
             my_node = append_c(my_node, ",");
         }
     }
-    my_node = append_c(my_node, "]");
+    // my_node = append_c(my_node, "]");
     return my_node;
 }
 
