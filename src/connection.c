@@ -94,6 +94,7 @@ void *server_thread(void *args) {
                         char str[1024];
                         fscanf(g, "%s", str);
                         string word = init_string_c(str);
+                        word = append_c(word, " ");
                         sprintln(word);
                         char *sending = to_char(word);
                         fprintf(stderr, "FILE: SERVER: current word: %s\n", str);
@@ -261,7 +262,6 @@ void* client_file_thread(void* args) {
             fprintf(stderr, "CLIENT: FILE: Received number of bytes: %d\n", nbytes);
             fprintf(stderr, "CLIENT: FILE: Received word: %s", buffer);
             fprintf(f, "%s", buffer);
-            fprintf(f, "%s", " ");
         }
         fclose(f);
         close(sock);
