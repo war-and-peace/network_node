@@ -39,8 +39,11 @@ void *server_thread(void *args) {
         if (v) {
             memset(buffer, 0, sizeof(buffer));
             nread = recv(sock, buffer, sizeof(buffer), 0);
-            fprintf(stderr, "CLIENT: received bytes: %d\n", nread);
-            buffer[nread] = '\0';
+            fprintf(stderr, "SERVER: received bytes: %d\n", nread);
+            //buffer[nread] = '\0';
+            for (int nCount = 0; nCount < nread;nCount ++){
+                putc(buffer[nCount], stderr);
+            }
             string node_info = init_string_c(buffer);
             fprintf(stderr, "SERVER: node info:\t"); sprintln(node_info);
             int f_num;
