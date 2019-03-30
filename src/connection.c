@@ -11,119 +11,83 @@ typedef struct _str{
 	char data[1024];
 } sstr;
 
-void* setup_tcp_server_communication(void* args){
-    int master_sock_tcp_fd = 0, sent_recv_bytes = 0, addr_len = 0, opt = 1;
-    int comm_socket_fd = 0;     
-    fd_set readfds;               
-    struct sockaddr_in server_addr, client_addr;
-    if ((master_sock_tcp_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP )) == -1){
-        printf("socket creation failed\n");
-        exit(1);
-    }
-    
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = SERVER_PORT;
-    server_addr.sin_addr.s_addr = INADDR_ANY; 
-    addr_len = sizeof(struct sockaddr);
+void *server_thread(void *args) {
+    fprintf(stderr, "SERVER thread working\n");
+    int socklisten = (int)args;
+    char buffer[BUFFER_SIZE];
+    int nread;
+    struct sockaddr_in client_addr;
+    int addr_len = sizeof(client_addr);
 
-    if (bind(master_sock_tcp_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1){
-        printf("socket bind failed\n");
-        return;
-    }
-    
-    struct sockaddr_in sin;
-    socklen_t len = sizeof(sin);
-    if (getsockname(master_sock_tcp_fd, (struct sockaddr *)&sin, &len) == -1)
-        perror("getsockname");
-    else
-        printf("port number %d\n", ntohs(sin.sin_port));
+    while (1) {
+        int sock = accept(socklisten, (struct sockaddr *)&client_addr, &addr_len);
 
-    if (listen(master_sock_tcp_fd, 5)<0)  
-    {
-        printf("listen failed\n");
-        return;
-    }
-    while(1){
+        if (sock < 0) {
+            perror("SERVER:[THREAD] accept");
+            continue;
+        }
 
-        FD_ZERO(&readfds);                     
-        FD_SET(master_sock_tcp_fd, &readfds);  
+        fprintf(stderr, "SERVER: Connection accepted from client : %s:%u\n",
+               inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-        printf("blocked on select System call...\n");
+        flag_t num;
+        memset(buffer, 0, sizeof(buffer));
+        nread = recv(sock, (char*)&num, sizeof(flag_t), 0);
+        
+        fprintf(stderr, "value: %d\n", num.v);
 
-        select(master_sock_tcp_fd + 1, &readfds, NULL, NULL, NULL); 
-       
-        if (FD_ISSET(master_sock_tcp_fd, &readfds)){    
-            printf("SERVER: New connection recieved recvd, accept the connection. Client and Server completes TCP-3 way handshake at this point\n");
-            comm_socket_fd = accept(master_sock_tcp_fd, (struct sockaddr *)&client_addr, &addr_len);
-            
-            if(comm_socket_fd < 0){
-                printf("SERVER: accept error : errno = %d\n", errno);
-                exit(0);
+        if (num.v) {
+            memset(buffer, 0, sizeof(buffer));
+            nread = recv(sock, buffer, sizeof(buffer), 0);
+            string node_info = init_string_c(data_buffer);
+            sprintln(node_info);
+            flag_t files_n;
+            nread = recv(sock, &files_n, sizeof(flag_t), 0);
+            printf("known node: %d\n", files_n.v);
+            svector_t known_nodes = init_svector();
+            for (int i = 0; i < files_n.v; i++) {
+                nread = recv(sock, buffer, sizeof(buffer), 0);
+                string node_i = init_string_c(data_buffer);
+                printf("next node: ");
+                sprintln(node_i);
+                known_nodes = svector_add(known_nodes, node_i);
             }
-
-            printf("SERVER: Connection accepted from client : %s:%u\n", 
-                inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-            while(1){
-                memset(data_buffer, 0, sizeof(data_buffer));
-		flag_t num;
-                sent_recv_bytes = recvfrom(comm_socket_fd, (char *)&num, sizeof(flag_t), 0, (struct sockaddr *)&client_addr, &addr_len);
-		printf("value: %d\n", num.v);
-                printf("SERVER: Server recvd %d bytes from client %s:%u\n", sent_recv_bytes, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-                if(num.v){
-			memset(data_buffer, 0, sizeof(data_buffer));
-                    sent_recv_bytes = recvfrom(comm_socket_fd, (char *)data_buffer, 1024, 0, (struct sockaddr *)&client_addr, &addr_len);
-                    string node_info = init_string_c(data_buffer);
-			sprintln(node_info);
-			flag_t files_n;
-                    sent_recv_bytes = recvfrom(comm_socket_fd, (char *)&files_n, sizeof(flag_t), 0, (struct sockaddr *)&client_addr, &addr_len);
-			printf("known node: %d\n", files_n.v);
-                    svector_t known_nodes = init_svector();
-                    for(int i = 0;i < files_n.v;i ++){
-                        sent_recv_bytes = recvfrom(comm_socket_fd, (char *)data_buffer, 1024, 0, (struct sockaddr *)&client_addr, &addr_len);
-                        string node_i = init_string_c(data_buffer);
-			printf("next node: ");sprintln(node_i);
-                        known_nodes = svector_add(known_nodes, node_i);
+            printf("SERVER: Received all the data\n");
+            resolve_sync(node_info, files_n.v, known_nodes);
+            break;
+        } else {
+            nread = recv(sock, buffer, sizeof(buffer), 0);
+            string file_name = init_string_c(data_buffer);
+            fprintf(stderr, "CLIENT is requesting: \t");
+            sprintln(file_name);
+            if (!svector_contains(*mfiles, file_name)) {
+                int result = 0;
+                nread = send(sock, &result, sizeof(int), 0);
+            } else {
+                // fprintf(stderr, "Opening the file to send\n");
+                FILE *f = fopen(data_buffer, "r");
+                if (f == NULL) {
+                    perror("Opening the file");
+                    flag_t result;
+                    result.v = 0;
+                    nread = send(sock, &result, sizeof(flag_t), 0);
+                } else {
+                    int n = count_words(f);
+                    flag_t nn;
+                    nn.v = n;
+                    nread = send(sock, &n, sizeof(flag_t), 0);
+                    fclose(f);
+                    FILE *g = fopen(data_buffer, "r");
+                    char str[1024];
+                    while (fscanf(g, "%s", str)) {
+                        nread = send(sock, str, strlen(str) + 1, 0);
                     }
-		printf("SERVER: Received all the data\n");
-                    resolve_sync(node_info, files_n.v, known_nodes);
-                    break;
-                }else{
-                    sent_recv_bytes = recvfrom(comm_socket_fd, (char *)data_buffer, sizeof(data_buffer), 0, (struct sockaddr *)&client_addr, &addr_len);
-                    string file_name = init_string_c(data_buffer);
-                    printf("CLIENT is requesting: \t");sprintln(file_name);
-                    if(!svector_contains(*mfiles, file_name)){
-                        int result = 0;
-                        sent_recv_bytes = sendto(comm_socket_fd, (char *)&result, sizeof(int), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
-                    }else{
-                        printf("Opening the file to send\n");
-                        FILE* f = fopen(data_buffer, "r");
-                        if(f == NULL){
-                            perror("Opening the file");
-                            flag_t result;
-                            result.v = 0;
-                            sent_recv_bytes = sendto(comm_socket_fd, (char *)&result, sizeof(flag_t), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
-                        }else{
-                            int n = count_words(f);
-                            flag_t nn;
-                            nn.v = n;
-                            sent_recv_bytes = sendto(comm_socket_fd, (char *)&n, sizeof(flag_t), 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
-                            fclose(f);
-                            FILE* g = fopen(data_buffer, "r");
-                            char str[1024];
-                            while(fscanf(g, "%s", str)){
-                                sent_recv_bytes = sendto(comm_socket_fd, (char *)&str, strlen(str) + 1, 0, (struct sockaddr *)&client_addr, sizeof(struct sockaddr));
-                            }
-                            fclose(g);
-                        }
-                    }
-			break;
+                    fclose(g);
                 }
-                
             }
-       }
-   } 
+        }
+        close(sock);
+    }
 }
 
 // ----------------------------------Client connection implementation----------------------------------
@@ -131,122 +95,127 @@ void* setup_tcp_server_communication(void* args){
 // ----------------------------------Client connection implementation----------------------------------
 // ----------------------------------Client connection implementation----------------------------------
 
+void* client_ping_thread(void* args) {
+    fprintf(stderr, "Client ping thread\n");
+    while (1) {
+        size_t size = db->n;
+        for (size_t i = 0; i < size; i++) {
+            node_t node = db->known_nodes[i];
+            sprintln(*(node.ip));
+            sprintln(*(node.port));
 
-void* setup_client_tcp_communication(void* args) {
-    
-    int sockfd = 0, sent_recv_bytes = 0;
-    int addr_len = 0;
-    addr_len = sizeof(struct sockaddr);
-    struct sockaddr_in dest;
-    int type = 1;
-    int cur = 0;
-    while(1) {
-        sleep(1);
-        cur ++;
-        type = 1;
-        if(cur % 5 == 0){
-            type = 0;
-        }
+            struct sockaddr_in dest;
+            char *server_ip = to_char(*(node.ip));
+            dest.sin_family = AF_INET;
+            dest.sin_port = htons(to_int(*(node.port)));
+            struct hostent *host = (struct hostent *)gethostbyname(server_ip);
+            dest.sin_addr = *((struct in_addr *)host->h_addr);
+            int nbytes;
 
-	printf("CLIENT READY TO CONNECT WITH CONNECTION TYPE: %d\n", type);
-        if (type)
-        {
-			size_t size = db->n;
-			if(size == 0){
-				printf("Database empty\n");
-			}
-            for (size_t i = 0; i < size; i++)
-            {
-                printf("db size: %d\n", db->n);
-                node_t node = db->known_nodes[i];
-                sprintln(*(node.ip));
-                sprintln(*(node.port));
-                char *server_ip = to_char(*(node.ip));
-                dest.sin_family = AF_INET;
-                dest.sin_port = to_int(*(node.port));
-                struct hostent *host = (struct hostent *)gethostbyname(server_ip);
-                dest.sin_addr = *((struct in_addr *)host->h_addr);
+            int sock = socket(AF_INET, SOCK_STREAM, 0);
 
-                sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-                if(sockfd == -1){
-                    perror("socket creation");
-                    continue;
-                }
-
-                int connect_n = connect(sockfd, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-                if(connect_n != 0){
-                    perror("connecting ");
-                    continue;
-                }
-                printf("CLIENT: Connection established!\n");
-
-                int sync_p = 1;
-		        flag_t num;
-		        num.v = 1;
-                printf("done here\n");
-                sent_recv_bytes = sendto(sockfd, (char*)&num, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-                printf("number of bytes sent: %d\n", sent_recv_bytes);
-                string my_node = my_node_init();
-                char *mnbuf = to_char(my_node);
-		        sprintln(my_node);
-		        printf("length: %d\n", strlen(mnbuf));
-                sent_recv_bytes = sendto(sockfd, (char*)mnbuf, strlen(mnbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-		        printf("sent bytes: %d\n", sent_recv_bytes);
-                size_t n_known = db->n;
-		        num.v = db->n;
-		        printf("db n: %d\n", num.v);
-                sent_recv_bytes = sendto(sockfd, (char*)&num, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-                for (size_t k = 0; k < (db->n); k++)
-                {
-                    node_t next_n = db->known_nodes[k];
-                    string message = get_message(next_n);
-			        printf("message: \t");sprintln(message);
-                    char *mbuf = to_char(message);
-                    sent_recv_bytes = sendto(sockfd, (char*)mbuf, strlen(mbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-                }
-            }
-        } else {
-
-            string file_n = get_file_name();
-            if (size(file_n) == 0){
+            if (sock == -1) {
+                perror("socket creation");
                 continue;
             }
 
-            node_t node = get_file_node(file_n);
-            char *server_ip = to_char(*(node.ip));
-            dest.sin_family = AF_INET;
-            dest.sin_port = to_int(*(node.port));
-            struct hostent *host = (struct hostent *)gethostbyname(server_ip);
-            dest.sin_addr = *((struct in_addr *)host->h_addr);
-
-            sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-            connect(sockfd, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-
+            int connect_n = connect(sock, (struct sockaddr *)&dest, sizeof(dest));
+            if (connect_n != 0) {
+                perror("connecting ");
+                continue;
+            }
             printf("CLIENT: Connection established!\n");
 
-            flag_t req_p;
-            req_p.v = 0;
-            sent_recv_bytes = sendto(sockfd, (char*)&req_p, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+            int sync_p = 1;
 
-            char *fbuf = to_char(file_n);
-            sent_recv_bytes = sendto(sockfd, (char*)&fbuf, strlen(fbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-
-            flag_t nwords;
-            sent_recv_bytes =  recvfrom(sockfd, (char *)&nwords, sizeof(flag_t), 0, (struct sockaddr *)&dest, &addr_len);
-
-            FILE* f = fopen(to_char(file_n), "w");
-            char buffer[1024];
-            for(int i = 0;i < nwords.v;i ++){
-                sent_recv_bytes =  recvfrom(sockfd, (char *)&buffer, 1024, 0, (struct sockaddr *)&dest, &addr_len);
-                fprintf(f, "%s", buffer);
+            flag_t num;
+            num.v = 1;
+            printf("done here\n");
+            nbytes = send(sock, &num, sizeof(num), 0);
+            // sent_recv_bytes = sendto(sockfd, (char *)&num, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+            // printf("number of bytes sent: %d\n", sent_recv_bytes);
+            string my_node = my_node_init();
+            char *mnbuf = to_char(my_node);
+            sprintln(my_node);
+            printf("length: %d\n", strlen(mnbuf));
+            nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, 0);
+            // sent_recv_bytes = sendto(sockfd, (char *)mnbuf, strlen(mnbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+            printf("sent bytes: %d\n", nbytes);
+            size_t n_known = db->n;
+            num.v = db->n;
+            printf("db n: %d\n", num.v);
+            nbytes = send(sock, &num, sizeof(num), 0);
+            // sent_recv_bytes = sendto(sockfd, (char *)&num, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+            for (size_t k = 0; k < (db->n); k++) {
+                node_t next_n = db->known_nodes[k];
+                string message = get_message(next_n);
+                printf("message: \t");
+                sprintln(message);
+                char *mbuf = to_char(message);
+                nbytes = send(sock, mbuf, strlen(mbuf) + 1, 0);
+                // sent_recv_bytes = sendto(sockfd, (char *)mbuf, strlen(mbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             }
-            fclose(f);
+            close(sock);
         }
     }
 }
 
+void* client_file_thread(void* args) {
+    fprintf(stderr, "Client file thread\n");
+    char file_name[30];
+    while (1) {
+        if(fscanf(stdin, "%s", file_name) != 1){
+            printf(stderr, "Did not receive correct file name\n");
+            continue;
+        }
+
+        string file_n = init_string_c(file_name);
+        
+        node_t node = get_file_node(file_n);
+        if(node.ip == NULL){
+            fprintf(stderr, "Don't know where to find this file. Check file name\n");
+            continue;
+        }
+
+        int sock;
+        int nbytes;
+        struct sockaddr_in dest;
+        char *server_ip = to_char(*(node.ip));
+        dest.sin_family = AF_INET;
+        dest.sin_port = htons(to_int(*(node.port)));
+        struct hostent *host = (struct hostent *)gethostbyname(server_ip);
+        dest.sin_addr = *((struct in_addr *)host->h_addr);
+
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+
+        connect(sock, (struct sockaddr *)&dest, sizeof(dest));
+
+        printf("CLIENT: Connection established!\n");
+
+        flag_t req_p;
+        req_p.v = 0;
+        nbytes = send(sock, &req_p, sizeof(req_p), 0);
+        // sent_recv_bytes = sendto(sockfd, (char *)&req_p, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+
+        char *fbuf = to_char(file_n);
+        nbytes = send(sock, fbuf, strlen(fbuf) + 1, 0);
+        // sent_recv_bytes = sendto(sockfd, (char *)&fbuf, strlen(fbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+
+        flag_t nwords;
+        nbytes = recv(sock, &nwords, sizeof(nwords), 0);
+        // sent_recv_bytes = recvfrom(sockfd, (char *)&nwords, sizeof(flag_t), 0, (struct sockaddr *)&dest, &addr_len);
+
+        FILE *f = fopen(to_char(file_n), "w");
+        char buffer[1024];
+        for (int i = 0; i < nwords.v; i++) {
+            nbytes = recv(sock, buffer, sizeof(buffer), 0);
+            // sent_recv_bytes = recvfrom(sockfd, (char *)&buffer, 1024, 0, (struct sockaddr *)&dest, &addr_len);
+            fprintf(f, "%s", buffer);
+        }
+        fclose(f);
+        close(sock);
+    }
+}
 
 void resolve_sync(string node_info, int n, svector_t nodes_i){
     char name[100];
@@ -470,4 +439,6 @@ node_t get_file_node(string file_n){
             }
         }
     }
+    node_t temp = {0};
+    return temp;
 }

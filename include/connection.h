@@ -22,9 +22,15 @@ typedef struct _flag {
     int v;
 } flag_t;
 
+typedef struct _client_info{
+    int type;
+    char ip[30];
+} client_info_t;
+
 char data_buffer[BUFFER_SIZE];
 flag_t* flag;
 
-void* setup_tcp_server_communication(void* args);
-void* setup_client_tcp_communication(void* args);
+void* server_thread(void* args);
+void* client_ping_thread(void* args);
+void* client_file_thread(void* args);
 void resolve_sync(string node_info, int n, svector_t nodes_i);
