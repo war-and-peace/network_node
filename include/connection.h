@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "dbase.h"
+#include <time.h>
 
 #define SERVER_PORT 2000
 #define SERVER_PORT_C "2000"
