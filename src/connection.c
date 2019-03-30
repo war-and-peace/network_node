@@ -92,7 +92,9 @@ void *server_thread(void *args) {
                     char str[1024];
                     while (!feof(g)) {
                         fscanf(g, "%s", str);
+                        fprintf(stderr, "FILE: SERVER: current word: %s\n", str);
                         nread = send(sock, str, strlen(str) + 1, 0);
+                        memset(str, 0, sizeof(str));
                     }
                     fclose(g);
                 }
