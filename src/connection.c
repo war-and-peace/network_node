@@ -39,6 +39,8 @@ void *server_thread(void *args) {
         if (v) {
             memset(buffer, 0, sizeof(buffer));
             nread = recv(sock, buffer, sizeof(buffer), 0);
+            fprintf(stderr, "CLIENT: received bytes: %d\n", nread);
+            buffer[nread] = '\0';
             string node_info = init_string_c(buffer);
             fprintf(stderr, "SERVER: node info:\t"); sprintln(node_info);
             int f_num;
@@ -163,7 +165,8 @@ void* client_ping_thread(void* args) {
             sprintln(my_node);
             fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %lu\n", strlen(mnbuf));
-            nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, MSG_DONTWAIT);
+            nbytes = send(sock, mnbuf, strlen(mnbuf), MSG_DONTWAIT);
+            fprintf(stderr, "CLIENT: sent bytes: %d\n", nbytes);
             printf("sent bytes: %d\n", nbytes);
             size_t n_known = db->n;
             n = db->n;
