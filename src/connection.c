@@ -62,7 +62,6 @@ void *server_thread(void *args) {
 
             printf("SERVER: Received all the data\n");
             resolve_sync(node_info, files_n.v, known_nodes);
-            break;
         } else {
             nread = recv(sock, buffer, sizeof(buffer), 0);
             string file_name = init_string_c(buffer);
@@ -70,20 +69,24 @@ void *server_thread(void *args) {
             sprintln(file_name);
             if (!svector_contains(*mfiles, file_name)) {
                 int result = 0;
+                fprintf(stderr, "SERVER: file: we don't have this file");
                 nread = send(sock, &result, sizeof(int), 0);
             } else {
                 // fprintf(stderr, "Opening the file to send\n");
                 FILE *f = fopen(buffer, "r");
                 if (f == NULL) {
+                    fprintf(stderr, "SERVER: FILE: Can't open the file\n");
                     perror("Opening the file");
                     flag_t result;
                     result.v = 0;
-                    nread = send(sock, &result, sizeof(flag_t), 0);
+                    nread = send(sock, &result, sizeof(result), 0);
                 } else {
+                    fprintf(stderr, "FILE: SERVER: FILE: opened the file\n");
                     int n = count_words(f);
+                    fprintf(stderr, "FILE: SERVER: Number of words: %d\n", n);
                     flag_t nn;
                     nn.v = n;
-                    nread = send(sock, &n, sizeof(flag_t), 0);
+                    nread = send(sock, &nn, sizeof(nn), 0);
                     fclose(f);
                     FILE *g = fopen(buffer, "r");
                     char str[1024];
