@@ -42,7 +42,8 @@ void *server_thread(void *args) {
             string node_info = init_string_c(buffer);
             fprintf(stderr, "SERVER: node info:\t"); sprintln(node_info);
             int f_num;
-            nread = recv(sock, &f_num, sizeof(f_num), 0);
+            nread = recv(sock, (char*)&f_num, sizeof(f_num), 0);
+            fprintf(stderr, "received bytes: %d\n", nread);
             printf("SERVER: known node: %d\n", f_num);
             fprintf(stderr, "Number of next nodes %d\n", f_num);
             svector_t known_nodes = init_svector();
@@ -77,14 +78,14 @@ void *server_thread(void *args) {
                     fprintf(stderr, "SERVER: FILE: Can't open the file\n");
                     perror("Opening the file");
                     int result = 0;
-                    nread = send(sock, &result, sizeof(result), 0);
+                    nread = send(sock, (char*)&result, sizeof(result), 0);
                 } else {
                     fprintf(stderr, "FILE: SERVER: FILE: opened the file\n");
                     int n = count_words(f);
                     if (n > 0) n--;
                     fprintf(stderr, "FILE: SERVER: Number of words: %d\n", n);
                     int nn = n;
-                    nread = send(sock, &nn, sizeof(nn), 0);
+                    nread = send(sock, (char*)&nn, sizeof(nn), 0);
                     fclose(f);
                     FILE *g = fopen(buffer, "r");
 
