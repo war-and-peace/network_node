@@ -97,7 +97,9 @@ void *server_thread(void *args) {
                         sprintln(word);
                         char *sending = to_char(word);
                         fprintf(stderr, "FILE: SERVER: current word: %s\n", str);
+                        fprintf(stderr, "FILE: SERVER: word lenght: %d\n", strlen(sending));
                         nread = send(sock, sending, strlen(sending) + 1, 0);
+                        fprintf(stderr, "FILE: SERVER: sent bytes: %d\n", nread);
                         // memset(str, 0, sizeof(str));
                     }
                     fclose(g);
