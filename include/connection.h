@@ -16,7 +16,7 @@
 #define IP "127.0.0.1"
 #define PORT "2003"
 #define NAME "RA"
-#define MY_IP "10.242.1.140"
+#define MY_IP "192.168.1.16"
 
 typedef struct _flag {
     int v;

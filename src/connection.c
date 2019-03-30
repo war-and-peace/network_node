@@ -30,29 +30,29 @@ void *server_thread(void *args) {
         fprintf(stderr, "SERVER: Connection accepted from client : %s:%u\n",
                inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-        flag_t num;
+        int v;
         memset(buffer, 0, sizeof(buffer));
-        nread = recv(sock, (char*)&num, sizeof(flag_t), 0);
+        nread = recv(sock, (char*)&v, sizeof(v), 0);
         
-        fprintf(stderr, "SERVER: value: %d\n", num.v);
+        fprintf(stderr, "SERVER: value: %d\n", v);
 
-        if (num.v) {
+        if (v) {
             memset(buffer, 0, sizeof(buffer));
             nread = recv(sock, buffer, sizeof(buffer), 0);
             string node_info = init_string_c(buffer);
             fprintf(stderr, "SERVER: node info:\t"); sprintln(node_info);
-            flag_t files_n;
-            nread = recv(sock, &files_n, sizeof(flag_t), 0);
-            printf("SERVER: known node: %d\n", files_n.v);
-            fprintf(stderr, "Number of next nodes %d\n", files_n.v);
+            int f_num;
+            nread = recv(sock, &f_num, sizeof(f_num), 0);
+            printf("SERVER: known node: %d\n", f_num);
+            fprintf(stderr, "Number of next nodes %d\n", f_num);
             svector_t known_nodes = init_svector();
             int limit;
-            if (files_n.v < 10)
-                limit = files_n.v;
+            if (f_num < 10)
+                limit = f_num;
             else
                 limit = 10;
 
-            for (int i = 0; i < files_n.v; i++) {
+            for (int i = 0; i < limit; i++) {
                 nread = recv(sock, buffer, sizeof(buffer), 0);
                 string node_i = init_string_c(buffer);
                 printf("SERVER: next node: ");
@@ -61,7 +61,7 @@ void *server_thread(void *args) {
             }
 
             printf("SERVER: Received all the data\n");
-            resolve_sync(node_info, files_n.v, known_nodes);
+            resolve_sync(node_info, limit, known_nodes);
         } else {
             nread = recv(sock, buffer, sizeof(buffer), 0);
             string file_name = init_string_c(buffer);
@@ -76,16 +76,14 @@ void *server_thread(void *args) {
                 if (f == NULL) {
                     fprintf(stderr, "SERVER: FILE: Can't open the file\n");
                     perror("Opening the file");
-                    flag_t result;
-                    result.v = 0;
+                    int result = 0;
                     nread = send(sock, &result, sizeof(result), 0);
                 } else {
                     fprintf(stderr, "FILE: SERVER: FILE: opened the file\n");
                     int n = count_words(f);
                     if (n > 0) n--;
                     fprintf(stderr, "FILE: SERVER: Number of words: %d\n", n);
-                    flag_t nn;
-                    nn.v = n;
+                    int nn = n;
                     nread = send(sock, &nn, sizeof(nn), 0);
                     fclose(f);
                     FILE *g = fopen(buffer, "r");
@@ -155,10 +153,9 @@ void* client_ping_thread(void* args) {
             }
             int sync_p = 1;
 
-            flag_t num;
-            num.v = 1;
+            int n = 1;
             printf("done here %d\n", connect_n);
-            nbytes = send(sock, &num, sizeof(num), 0);
+            nbytes = send(sock, (char*)&n, sizeof(n), 0);
             string my_node = my_node_init();
             char *mnbuf = to_char(my_node);
             sprintln(my_node);
@@ -167,9 +164,10 @@ void* client_ping_thread(void* args) {
             nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, 0);
             printf("sent bytes: %d\n", nbytes);
             size_t n_known = db->n;
-            num.v = db->n;
-            printf("db n: %d\n", num.v);
-            nbytes = send(sock, &num, sizeof(num), 0);
+            n = db->n;
+            printf("db n: %d\n", n);
+            nbytes = send(sock, (char*)&n, sizeof(n), 0);
+            fprintf(stderr, "Sent bytes: %d\n", nbytes);
             for (size_t k = 0; k < (db->n); k++) {
                 node_t next_n = db->known_nodes[k];
                 string message = get_message(next_n);
@@ -228,18 +226,17 @@ void* client_file_thread(void* args) {
 
         printf("CLIENT: file: Connection established!\n");
 
-        flag_t req_p;
-        req_p.v = 0;
+        int req_p = 0;
         nbytes = send(sock, &req_p, sizeof(req_p), 0);
 
         char *fbuf = to_char(file_n);
         nbytes = send(sock, fbuf, strlen(fbuf) + 1, 0);
         fprintf(stderr, "CLIENT: file: sent file name: %s\n", fbuf);
 
-        flag_t nwords;
+        int nwords;
         nbytes = recv(sock, &nwords, sizeof(nwords), 0);
         fprintf(stderr, "CLIENT: FILE: received bytes: %d\n", nbytes);
-        fprintf(stderr, "CLIENT: file: received byte count: %d\n", nwords.v);
+        fprintf(stderr, "CLIENT: file: received byte count: %d\n", nwords);
 
         FILE *f = fopen(to_char(file_n), "w");
         if(f == NULL){
@@ -247,7 +244,7 @@ void* client_file_thread(void* args) {
             continue;
         }
         
-        for (int i = 0; i < nwords.v; i++) {
+        for (int i = 0; i < nwords; i++) {
             char buffer[1024];
             nbytes = recv(sock, buffer, sizeof(buffer), 0);
             buffer[nbytes] = '\0';
