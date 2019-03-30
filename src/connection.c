@@ -163,18 +163,21 @@ void* client_ping_thread(void* args) {
             int n = 1;
             printf("done here %d\n", connect_n);
             nbytes = send(sock, (char*)&n, sizeof(n), MSG_DONTWAIT);
+            nbytes = send(sock, NULL, 0, 0);
             string my_node = my_node_init();
             char *mnbuf = to_char(my_node);
             sprintln(my_node);
             fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %lu\n", strlen(mnbuf));
             nbytes = send(sock, mnbuf, strlen(mnbuf), MSG_DONTWAIT);
+            nbytes = send(sock, NULL, 0, 0);
             fprintf(stderr, "CLIENT: sent bytes: %d\n", nbytes);
             printf("sent bytes: %d\n", nbytes);
             size_t n_known = db->n;
             n = db->n;
             printf("db n: %d\n", n);
             nbytes = send(sock, (char*)&n, sizeof(n), MSG_DONTWAIT);
+            nbytes = send(sock, NULL, 0, 0);
             fprintf(stderr, "Sent bytes: %d\n", nbytes);
             for (size_t k = 0; k < (db->n); k++) {
                 node_t next_n = db->known_nodes[k];
@@ -183,6 +186,7 @@ void* client_ping_thread(void* args) {
                 sprintln(message);
                 char *mbuf = to_char(message);
                 nbytes = send(sock, mbuf, strlen(mbuf) + 1, MSG_DONTWAIT);
+                nbytes = send(sock, NULL, 0, 0);
             }
             close(sock);
             
