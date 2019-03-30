@@ -13,7 +13,7 @@ typedef struct _str{
 
 void *server_thread(void *args) {
     fprintf(stderr, "SERVER thread working\n");
-    int socklisten = (int)args;
+    int socklisten = *((int*)args);
     char buffer[BUFFER_SIZE];
     int nread;
     struct sockaddr_in client_addr;
@@ -72,7 +72,6 @@ void *server_thread(void *args) {
                 fprintf(stderr, "SERVER: file: we don't have this file");
                 nread = send(sock, &result, sizeof(int), 0);
             } else {
-                // fprintf(stderr, "Opening the file to send\n");
                 FILE *f = fopen(buffer, "r");
                 if (f == NULL) {
                     fprintf(stderr, "SERVER: FILE: Can't open the file\n");
@@ -83,14 +82,15 @@ void *server_thread(void *args) {
                 } else {
                     fprintf(stderr, "FILE: SERVER: FILE: opened the file\n");
                     int n = count_words(f);
+                    if (n > 0) n--;
                     fprintf(stderr, "FILE: SERVER: Number of words: %d\n", n);
                     flag_t nn;
                     nn.v = n;
                     nread = send(sock, &nn, sizeof(nn), 0);
                     fclose(f);
                     FILE *g = fopen(buffer, "r");
-                    
-                    while (!feof(g)) {
+
+                    for (int nCount = 0; nCount < n;nCount ++){
                         char str[1024];
                         fscanf(g, "%s", str);
                         string word = init_string_c(str);
@@ -98,7 +98,7 @@ void *server_thread(void *args) {
                         sprintln(word);
                         char *sending = to_char(word);
                         fprintf(stderr, "FILE: SERVER: current word: %s\n", str);
-                        fprintf(stderr, "FILE: SERVER: word length: %d\n", strlen(sending));
+                        fprintf(stderr, "FILE: SERVER: word length: %lu\n", strlen(sending));
                         nread = send(sock, sending, strlen(sending), 0);
                         fprintf(stderr, "FILE: SERVER: sent bytes: %d\n", nread);
                         // memset(str, 0, sizeof(str));
@@ -151,7 +151,7 @@ void* client_ping_thread(void* args) {
             if (connect_n) continue;
             if (connect_n != 0) {
                 fprintf(stderr, "CLIENT: Connection established!\n");
-                fprintf(stderr, "CLIENT: WHy it is printing this?\n");
+                fprintf(stderr, "CLIENT: Why it is printing this?\n");
             }
             int sync_p = 1;
 
@@ -159,21 +159,17 @@ void* client_ping_thread(void* args) {
             num.v = 1;
             printf("done here %d\n", connect_n);
             nbytes = send(sock, &num, sizeof(num), 0);
-            // sent_recv_bytes = sendto(sockfd, (char *)&num, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
-            // printf("number of bytes sent: %d\n", sent_recv_bytes);
             string my_node = my_node_init();
             char *mnbuf = to_char(my_node);
             sprintln(my_node);
             fprintf(stderr, "my node info: %s\n", mnbuf);
             printf("length: %lu\n", strlen(mnbuf));
             nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, 0);
-            // sent_recv_bytes = sendto(sockfd, (char *)mnbuf, strlen(mnbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             printf("sent bytes: %d\n", nbytes);
             size_t n_known = db->n;
             num.v = db->n;
             printf("db n: %d\n", num.v);
             nbytes = send(sock, &num, sizeof(num), 0);
-            // sent_recv_bytes = sendto(sockfd, (char *)&num, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             for (size_t k = 0; k < (db->n); k++) {
                 node_t next_n = db->known_nodes[k];
                 string message = get_message(next_n);
@@ -181,7 +177,6 @@ void* client_ping_thread(void* args) {
                 sprintln(message);
                 char *mbuf = to_char(message);
                 nbytes = send(sock, mbuf, strlen(mbuf) + 1, 0);
-                // sent_recv_bytes = sendto(sockfd, (char *)mbuf, strlen(mbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             }
             close(sock);
             
@@ -236,18 +231,15 @@ void* client_file_thread(void* args) {
         flag_t req_p;
         req_p.v = 0;
         nbytes = send(sock, &req_p, sizeof(req_p), 0);
-        // sent_recv_bytes = sendto(sockfd, (char *)&req_p, sizeof(flag_t), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 
         char *fbuf = to_char(file_n);
         nbytes = send(sock, fbuf, strlen(fbuf) + 1, 0);
         fprintf(stderr, "CLIENT: file: sent file name: %s\n", fbuf);
-        // sent_recv_bytes = sendto(sockfd, (char *)&fbuf, strlen(fbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
 
         flag_t nwords;
         nbytes = recv(sock, &nwords, sizeof(nwords), 0);
         fprintf(stderr, "CLIENT: FILE: received bytes: %d\n", nbytes);
         fprintf(stderr, "CLIENT: file: received byte count: %d\n", nwords.v);
-        // sent_recv_bytes = recvfrom(sockfd, (char *)&nwords, sizeof(flag_t), 0, (struct sockaddr *)&dest, &addr_len);
 
         FILE *f = fopen(to_char(file_n), "w");
         if(f == NULL){

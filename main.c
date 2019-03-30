@@ -86,7 +86,7 @@ int main(){
     for (int i = 0; i < POOL_SIZE; i++) {
         fprintf(stderr, "point: %d\n", i);
         result = pthread_create(&threads[i], NULL, server_thread,
-                                (void*)listensock);
+                                (void*)&listensock);
         if (result != 0) {
             printf("SERVER: Could not create thread %d\n", i);
         }
