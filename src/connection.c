@@ -89,12 +89,13 @@ void *server_thread(void *args) {
                     nread = send(sock, &nn, sizeof(nn), 0);
                     fclose(f);
                     FILE *g = fopen(buffer, "r");
-                    char str[1024];
+                    
                     while (!feof(g)) {
+                        char str[1024];
                         fscanf(g, "%s", str);
                         fprintf(stderr, "FILE: SERVER: current word: %s\n", str);
                         nread = send(sock, str, strlen(str) + 1, 0);
-                        memset(str, 0, sizeof(str));
+                        // memset(str, 0, sizeof(str));
                     }
                     fclose(g);
                 }
@@ -247,11 +248,14 @@ void* client_file_thread(void* args) {
             perror("CLIENT: file: file open");
             continue;
         }
-        char buffer[1024];
+        
         for (int i = 0; i < nwords.v; i++) {
+            char buffer[1024];
             nbytes = recv(sock, buffer, sizeof(buffer), 0);
+            fprintf(stderr, "CLIENT: FILE: Received word: %s", buffer);
             // sent_recv_bytes = recvfrom(sockfd, (char *)&buffer, 1024, 0, (struct sockaddr *)&dest, &addr_len);
             fprintf(f, "%s", buffer);
+            fprintf(f, "%s", " ");
         }
         fclose(f);
         close(sock);
