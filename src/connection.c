@@ -155,7 +155,7 @@ void* client_ping_thread(void* args) {
             char *mnbuf = to_char(my_node);
             sprintln(my_node);
             fprintf(stderr, "my node info: %s\n", mnbuf);
-            printf("length: %d\n", strlen(mnbuf));
+            printf("length: %lu\n", strlen(mnbuf));
             nbytes = send(sock, mnbuf, strlen(mnbuf) + 1, 0);
             // sent_recv_bytes = sendto(sockfd, (char *)mnbuf, strlen(mnbuf) + 1, 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
             printf("sent bytes: %d\n", nbytes);
@@ -184,7 +184,7 @@ void* client_file_thread(void* args) {
     char file_name[30];
     while (1) {
         if(fscanf(stdin, "%s", file_name) != 1){
-            printf(stderr, "Did not receive correct file name\n");
+            fprintf(stderr, "Did not receive correct file name\n");
             continue;
         }
 
@@ -235,7 +235,8 @@ void* client_file_thread(void* args) {
 
         flag_t nwords;
         nbytes = recv(sock, &nwords, sizeof(nwords), 0);
-        fprintf("CLIENT: file: received byte count: %d\n", nwords.v);
+        fprintf(stderr, "CLIENT: FILE: received bytes: %d\n", nbytes);
+        fprintf(stderr, "CLIENT: file: received byte count: %d\n", nwords.v);
         // sent_recv_bytes = recvfrom(sockfd, (char *)&nwords, sizeof(flag_t), 0, (struct sockaddr *)&dest, &addr_len);
 
         FILE *f = fopen(to_char(file_n), "w");
@@ -259,7 +260,7 @@ void resolve_sync(string node_info, int n, svector_t nodes_i){
     fprintf(stderr, "node_info: ");
     sprintln(node_info);
     fprintf(stderr, "known_nodes number: %d\n", n);
-    fprintf(stderr, "SERVER: nodes size: %d\n", *(nodes_i._size));
+    fprintf(stderr, "SERVER: nodes size: %lu\n", *(nodes_i._size));
     for (int i = 0; i < *(nodes_i._size);i ++){
         fprintf(stderr, "SERVER: nodes: ");
         sprintln(nodes_i.data[i]);
