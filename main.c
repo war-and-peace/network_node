@@ -5,6 +5,9 @@
 #define POOL_SIZE 10
 
 dbase_t* db;
+cdb_t* cdb;
+bldb_t* b_list;
+
 svector_t* mfiles;
 pthread_t* threads;
 pthread_t cthread_ping, cthread_file;
@@ -17,7 +20,14 @@ void init_files() {
 
 int main(){
     init_files();
-    
+    if(cdatabase_init()){
+        perror("Initializing the cdb databaase");
+        exit(1);
+    }
+    if(blist_init()){
+        perror("Initializing the black list database");
+        exit(1);
+    }
     threads = malloc(sizeof(pthread_t) * POOL_SIZE);
     if(threads == NULL){
         fprintf(stderr, "Can't allocate memory for threads");
@@ -42,7 +52,15 @@ int main(){
         perror("SERVER");
         return 0;
     }
-
+    struct timeval tv;
+    tv.tv_sec = 3;
+    tv.tv_usec = 0;
+    result = setsockopt(listensock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    if (result < 0) {
+        perror("SERVER");
+        return 0;
+    }
+    
     sAddr.sin_family = AF_INET;
     sAddr.sin_port = htons(SERVER_PORT);
     sAddr.sin_addr.s_addr = INADDR_ANY;

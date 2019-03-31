@@ -140,3 +140,82 @@ int database_update(node_t node, svector_t files_list){
     // perror("DONE update");
     return 0;
 }
+
+int cdatabase_init(){
+    cdb = (cdb_t*)malloc(sizeof(cdb_t));
+    if (cdb == NULL) return 1;
+    cdb->n = 0;
+    return 0;
+}
+
+int cdatabase_has(unsigned int id){
+    for (size_t i = 0;i < (cdb->n);i ++){
+        if(cdb->a[i].id == id){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int cdatabase_add(unsigned int id){
+    size_t n = cdb->n;
+    cdb->a[n].id = id;
+    cdb->a[n].count = 0;
+    cdb->n = n + 1;
+    return 1;
+}
+
+size_t cdatabase_count(unsigned int id){
+    for (size_t i = 0; i < (cdb->n);i ++){
+        if(cdb->a[i].id == id){
+            return cdb->a[i].count;
+        }
+    }
+    return 0;
+}
+
+int cdatabase_clear(unsigned int id){
+    return 0;
+}
+
+int cdatabase_increase(unsigned int id){
+    for (size_t i = 0; i < (cdb->n);i ++){
+        if(cdb->a[i].id == id){
+            (cdb->a[i].count)++;
+            return 0;
+        }
+    }
+    return 0;
+}
+
+int cdatabase_decrese(unsigned int id){
+    for (size_t i = 0; i < (cdb->n);i ++){
+        if(cdb->a[i].id == id){
+            (cdb->a[i].count)--;
+            return 0;
+        }
+    }
+    return 0;
+}
+
+int blist_init(){
+    b_list = (bldb_t*)malloc(sizeof(bldb_t));
+    if (b_list == NULL) return 1;
+    b_list->n = 0;
+    return 0;
+}
+
+int blist_add(unsigned int id){
+    b_list->id[(b_list->n)] = id;
+    (b_list->n)++;
+    return 0;
+}
+
+int blist_has(unsigned int id){
+    for (size_t i = 0; i < (b_list->n);i ++){
+        if(b_list->id[i] == id){
+            return 1;
+        }
+    }
+    return 0;
+}
