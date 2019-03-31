@@ -233,7 +233,7 @@ void *client_file_thread(void *args) {
                 continue;
             }
             // nbytes = recv(sock, buffer, sizeof(buffer), 0);
-            buffer[nbytes] = '\0';
+            // buffer[nbytes] = '\0';
             // fprintf(stderr, "CLIENT: FILE: Received number of bytes: %d\n", nbytes);
             // fprintf(stderr, "CLIENT: FILE: Received word: %s", buffer);
             fprintf(f, "%s ", buffer);
@@ -581,10 +581,11 @@ int file_process(int sock) {
             for (int nCount = 0; nCount < n; nCount++) {
                 char str[1024];
                 fscanf(g, "%s", str);
-                string word = init_string_c(str);
+                // string word = init_string_c(str);
                 // word = append_c(word, " ");
-                char *sending = to_char(word);
-                nread = send(sock, sending, strlen(sending), 0);
+                // char *sending = to_char(word);
+                // nread = send(sock, sending, strlen(sending), 0);
+                nread = send(sock, str, sizeof(str), 0);
             }
             fclose(g);
         }
