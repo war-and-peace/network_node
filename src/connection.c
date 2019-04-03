@@ -509,7 +509,7 @@ int sync_process(int sock) {
     int nread;
     memset(buffer, 0, sizeof(buffer));
     nread = receive(sock, buffer, sizeof(buffer));
-    if (nread < 0) {
+    if (nread <= 0) {
         close(sock);
         return 1;
     }
@@ -522,7 +522,7 @@ int sync_process(int sock) {
     fprintf(stderr, "sizeof(fnum): %lu\n", sizeof(f_num));
 
     nread = receive(sock, (char *)&f_num, sizeof(f_num));
-    if (nread < 0) {
+    if (nread <= 0) {
         close(sock);
         return 1;
     }
@@ -539,7 +539,7 @@ int sync_process(int sock) {
 
     for (int i = 0; i < limit; i++) {
         nread = receive(sock, buffer, sizeof(buffer));
-        if (nread < 0) {
+        if (nread <= 0) {
             close(sock);
             return 1;
         }
@@ -560,7 +560,7 @@ int file_process(int sock) {
     char buffer[BUFFER_SIZE];
 
     nread = receive(sock, buffer, sizeof(buffer));
-    if (nread < 0) {
+    if (nread <= 0) {
         close(sock);
         return 1;
     }
