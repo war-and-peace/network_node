@@ -25,6 +25,7 @@ void *server_thread(void *args) {
     socklen_t addr_len = sizeof(client_addr);
 
     while (1) {
+        
         int sock = accept(socklisten, (struct sockaddr *)&client_addr, &addr_len);
 
         if (sock < 0) {
@@ -32,10 +33,10 @@ void *server_thread(void *args) {
             continue;
         }
 
-        fprintf(stderr, "SERVER is in action\n");
+        // fprintf(stderr, "SERVER is in action\n");
 
         unsigned long chash = client_addr.sin_addr.s_addr;
-        fprintf(stderr, "Client hash code: %lu", chash);
+        fprintf(stderr, "Client hash code: %lu\n", chash);
 
         // locking area
 
@@ -43,20 +44,26 @@ void *server_thread(void *args) {
 
         int can_proceed = 1;
         if (!blist_has(chash)) {
-            size_t cnt = cdatabase_count(chash);
-            if (cnt > 5) {
-                blist_add(chash);
-                can_proceed = 0;
-            } else {
-                cdatabase_increase(chash);
+            if (cdatabase_has(chash)) {
+                size_t cnt = cdatabase_count(chash);
+                if (cnt > 5) {
+                    blist_add(chash);
+                    fprintf(stderr, "--------%ld has been added to blacklist!\n--------", chash);
+                    can_proceed = 0;
+                } else {
+                    cdatabase_increase(chash);
+                }
+            }else{
+                cdatabase_add(chash);
             }
         } else {
+            fprintf(stderr, "client %ld is in blacklist. Closing connection!\n", chash);
             can_proceed = 0;
         }
 
         pthread_mutex_unlock(&lock);
 
-
+        // fprintf(stderr, "Can proceed: %d\n", can_proceed);
 
         // locking area finished
 
@@ -236,7 +243,10 @@ void *client_file_thread(void *args) {
             // buffer[nbytes] = '\0';
             // fprintf(stderr, "CLIENT: FILE: Received number of bytes: %d\n", nbytes);
             // fprintf(stderr, "CLIENT: FILE: Received word: %s", buffer);
-            fprintf(f, "%s ", buffer);
+            if(i < nwords - 1)
+                fprintf(f, "%s ", buffer);
+            else
+                fprintf(f, "%s", buffer);
         }
         fclose(f);
         close(sock);
@@ -572,7 +582,7 @@ int file_process(int sock) {
         } else {
             fprintf(stderr, "FILE: SERVER: FILE: opened the file\n");
             int n = count_words(f);
-            if (n > 0) n--;
+            // if (n > 0) n--;
             int nn = n;
             nread = send(sock, (char *)&nn, sizeof(nn), 0);
             fclose(f);

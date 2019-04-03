@@ -160,7 +160,7 @@ int cdatabase_has(unsigned int id){
 int cdatabase_add(unsigned int id){
     size_t n = cdb->n;
     cdb->a[n].id = id;
-    cdb->a[n].count = 0;
+    cdb->a[n].count = 1;
     cdb->n = n + 1;
     return 1;
 }
@@ -185,7 +185,7 @@ int cdatabase_increase(unsigned int id){
             return 0;
         }
     }
-    return 0;
+    return 1;
 }
 
 int cdatabase_decrese(unsigned int id){

@@ -16,6 +16,7 @@ void init_files() {
     mfiles = (svector_t*)malloc(sizeof(svector_t));
     (*mfiles) = init_svector();
     (*mfiles) = svector_add((*mfiles), init_string_c("ra.txt"));
+    (*mfiles) = svector_add((*mfiles), init_string_c("file.txt"));
 }
 
 int main(){
