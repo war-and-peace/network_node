@@ -46,9 +46,9 @@ void *server_thread(void *args) {
         if (!blist_has(chash)) {
             if (cdatabase_has(chash)) {
                 size_t cnt = cdatabase_count(chash);
-                if (cnt > 5) {
+                if (cnt > 4) {
                     blist_add(chash);
-                    fprintf(stderr, "--------%ld has been added to blacklist!\n--------", chash);
+                    fprintf(stderr, "--------%ld has been added to blacklist!--------\n", chash);
                     can_proceed = 0;
                 } else {
                     cdatabase_increase(chash);
